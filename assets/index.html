@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- 悪意ある md の生 HTML による XSS を緩和する。
+         script-src に 'unsafe-inline' を含めないので onerror/onload 等の
+         インラインイベントハンドラや注入 <script> は実行されない。
+         ベンダー JS(mermaid/katex/hljs) と app.js は 'self' から読み込む。 -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-src 'none'"
+    />
+    <title>madore</title>
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+    <link rel="stylesheet" href="/assets/vendor/katex.min.css" />
+    <link
+      rel="stylesheet"
+      href="/assets/vendor/hljs-light.css"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="stylesheet"
+      href="/assets/vendor/hljs-dark.css"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link rel="stylesheet" href="/assets/app.css" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar">
+        <header id="sidebar-header">
+          <span id="root-name"></span>
+        </header>
+        <nav id="tree" aria-label="ファイルツリー"></nav>
+      </aside>
+      <main id="content">
+        <article id="doc" class="markdown-body" hidden></article>
+        <div id="empty" class="empty">
+          <p>← サイドバーからファイルを選択</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- ベンダーライブラリ（存在しなくても app.js 側でガードする） -->
+    <script src="/assets/vendor/highlight.min.js"></script>
+    <script src="/assets/vendor/katex.min.js"></script>
+    <script src="/assets/vendor/mermaid.min.js"></script>
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

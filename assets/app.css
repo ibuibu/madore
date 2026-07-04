@@ -1,0 +1,349 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #656d76;
+  --border: #d1d9e0;
+  --sidebar-bg: #f6f8fa;
+  --accent: #0969da;
+  --accent-bg: #ddf4ff;
+  --code-bg: #f6f8fa;
+  --sidebar-width: 280px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+    --sidebar-bg: #010409;
+    --accent: #2f81f7;
+    --accent-bg: #388bfd26;
+    --code-bg: #161b22;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  /* 外側(html/body)のスクロールを止め、スクロールは #content 側だけに任せる */
+  overflow: hidden;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial,
+    "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+#app {
+  display: flex;
+  height: 100%;
+}
+
+/* ---- サイドバー ---- */
+
+#sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  border-right: 1px solid var(--border);
+  background: var(--sidebar-bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#sidebar-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+#root-name {
+  font-weight: 700;
+  color: var(--fg);
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#tree {
+  padding: 8px 6px;
+  overflow-y: auto;
+  flex: 1;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#tree ul {
+  list-style: none;
+  margin: 0 0 0 11px;
+  padding-left: 12px;
+  /* ネスト階層を分かりやすくするインデントガイド */
+  border-left: 1px solid var(--border);
+}
+
+#tree > ul {
+  margin-left: 0;
+  padding-left: 2px;
+  border-left: none;
+}
+
+#tree summary.dir {
+  cursor: pointer;
+  padding: 5px 6px;
+  border-radius: 6px;
+  color: var(--fg);
+  font-weight: 600;
+  user-select: none;
+}
+
+#tree summary.dir::marker {
+  color: var(--muted);
+}
+
+#tree summary.dir:hover {
+  background: var(--accent-bg);
+}
+
+#tree a.file {
+  display: block;
+  padding: 5px 6px 5px 20px;
+  border-radius: 6px;
+  color: var(--fg);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#tree a.file:hover {
+  background: var(--accent-bg);
+}
+
+#tree a.file.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ---- 本文 ---- */
+
+#content {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.empty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.markdown-body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 48px 120px;
+  line-height: 1.65;
+  font-size: 16px;
+  /* 空白の無い長い URL / インラインコードで横スクロールが出ないよう折り返す。 */
+  overflow-wrap: anywhere;
+}
+
+.markdown-body h1,
+.markdown-body h2 {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3em;
+}
+
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.markdown-body a {
+  color: var(--accent);
+}
+
+.markdown-body code {
+  background: var(--code-bg);
+  padding: 0.2em 0.4em;
+  border-radius: 6px;
+  font-size: 85%;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.markdown-body pre {
+  background: var(--code-bg);
+  padding: 16px;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.markdown-body pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 90%;
+}
+
+.markdown-body blockquote {
+  margin: 0;
+  padding: 0 1em;
+  color: var(--muted);
+  border-left: 0.25em solid var(--border);
+}
+
+.markdown-body table {
+  border-collapse: collapse;
+  display: block;
+  overflow: auto;
+  width: max-content;
+  max-width: 100%;
+}
+
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid var(--border);
+  padding: 6px 13px;
+}
+
+.markdown-body tr:nth-child(2n) {
+  background: var(--sidebar-bg);
+}
+
+.markdown-body img {
+  max-width: 100%;
+}
+
+.markdown-body input[type="checkbox"] {
+  margin-right: 0.4em;
+}
+
+.markdown-body .mermaid {
+  text-align: center;
+  margin: 1em 0;
+}
+
+/* ---- GitHub Alerts ---- */
+
+.markdown-body .markdown-alert {
+  padding: 8px 16px;
+  margin: 1em 0;
+  border-left: 0.25em solid var(--border);
+  border-radius: 6px;
+  color: var(--fg);
+}
+
+.markdown-body .markdown-alert > :first-child {
+  margin-top: 0;
+}
+
+.markdown-body .markdown-alert > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body .markdown-alert-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.markdown-alert-note {
+  border-left-color: #0969da;
+}
+.markdown-alert-note .markdown-alert-title {
+  color: #0969da;
+}
+.markdown-alert-tip {
+  border-left-color: #1a7f37;
+}
+.markdown-alert-tip .markdown-alert-title {
+  color: #1a7f37;
+}
+.markdown-alert-important {
+  border-left-color: #8250df;
+}
+.markdown-alert-important .markdown-alert-title {
+  color: #8250df;
+}
+.markdown-alert-warning {
+  border-left-color: #9a6700;
+}
+.markdown-alert-warning .markdown-alert-title {
+  color: #9a6700;
+}
+.markdown-alert-caution {
+  border-left-color: #cf222e;
+}
+.markdown-alert-caution .markdown-alert-title {
+  color: #cf222e;
+}
+
+/* ダークモードでは alert の色を明るい変種にしてコントラストを確保する。 */
+@media (prefers-color-scheme: dark) {
+  .markdown-alert-note {
+    border-left-color: #58a6ff;
+  }
+  .markdown-alert-note .markdown-alert-title {
+    color: #58a6ff;
+  }
+  .markdown-alert-tip {
+    border-left-color: #3fb950;
+  }
+  .markdown-alert-tip .markdown-alert-title {
+    color: #3fb950;
+  }
+  .markdown-alert-important {
+    border-left-color: #a371f7;
+  }
+  .markdown-alert-important .markdown-alert-title {
+    color: #a371f7;
+  }
+  .markdown-alert-warning {
+    border-left-color: #d29922;
+  }
+  .markdown-alert-warning .markdown-alert-title {
+    color: #d29922;
+  }
+  .markdown-alert-caution {
+    border-left-color: #f85149;
+  }
+  .markdown-alert-caution .markdown-alert-title {
+    color: #f85149;
+  }
+}
+
+/* 狭幅（スマホ・分割ウィンドウ）向け。サイドバーを細くして本文を確保する。 */
+@media (max-width: 640px) {
+  :root {
+    --sidebar-width: 150px;
+  }
+  #tree {
+    font-size: 14px;
+  }
+  .markdown-body {
+    padding: 24px 18px 80px;
+    font-size: 15px;
+  }
+}
