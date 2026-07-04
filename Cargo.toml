@@ -2,6 +2,12 @@
 name = "madore"
 version = "0.1.0"
 edition = "2024"
+description = "Markdown viewer served in your browser with a sidebar file tree and live reload"
+repository = "https://github.com/ibuibu/madore"
+readme = "README.md"
+license = "MIT"
+keywords = ["markdown", "viewer", "cli", "live-reload"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0.103"
