@@ -1,38 +1,47 @@
+<div align="center">
+
 # madore
 
-ブラウザで Markdown を表示するローカルビューア（Rust 製）。
-ローカルサーバーを立ててブラウザで開き、**引数なしでもカレントディレクトリをルートにして、サイドバーへ最初からファイルツリーを表示する**。
+**ブラウザで Markdown を軽快に読むためのローカルビューア**
 
-```sh
-madore              # カレントディレクトリを開く
-madore ./docs       # ディレクトリを指定
-```
+引数なしでもカレントディレクトリをルートにして、サイドバーに最初からファイルツリーを表示。<br>
+保存すれば自動でリロード。Rust 製の単一バイナリ。
 
-サーバーはバックグラウンドに常駐し、コマンドはすぐ戻る。ブラウザには常時ファイルツリーが出て、保存すると自動で表示が更新される。
+[![Release](https://img.shields.io/github/v/release/ibuibu/madore?style=flat-square)](https://github.com/ibuibu/madore/releases)
+[![License](https://img.shields.io/github/license/ibuibu/madore?style=flat-square)](LICENSE)
+![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)
 
-## 特徴
+<img src="docs/screenshot.png" width="820" alt="madore のスクリーンショット" />
 
-- サイドバーに Markdown ファイルツリーを常時表示、クリックで本文を表示
-- ライブリロード（ファイル保存を検知して自動更新、SSE）
-- GitHub Flavored Markdown（テーブル / タスクリスト / 脚注 / GitHub Alerts）
-- シンタックスハイライト（highlight.js）・数式（KaTeX）・Mermaid 図
-- 静的アセットをバイナリに埋め込み、単体で配布可能
-- ダーク / ライトはブラウザ設定に追従
-- サーバーはバックグラウンド常駐、コマンドは即終了（同じルートの2回目以降は既存サーバーを再利用）
+</div>
 
-## インストール
+## ✨ 特徴
 
-### 1. インストールスクリプト（Linux / macOS・Rust 不要）
+- 📂 **ファイルツリー** — サイドバーに常時表示、クリックで本文へ
+- 🔄 **ライブリロード** — 保存を検知して自動で表示更新（SSE）
+- 📝 **GitHub Flavored Markdown** — 表 / タスクリスト / 脚注 / GitHub Alerts
+- 🎨 **リッチ描画** — シンタックスハイライト・KaTeX 数式・Mermaid 図
+- 📦 **単一バイナリ** — 静的アセットを埋め込み、依存なしで配布可能
+- 🌗 **ダーク / ライト** — ブラウザ設定に自動追従
+- 🚀 **即終了** — サーバーはバックグラウンド常駐、コマンドはすぐ戻る（2回目以降は再利用）
+
+## 📦 インストール
+
+<details open>
+<summary><b>インストールスクリプト（Linux / macOS・Rust 不要）</b></summary>
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ibuibu/madore/main/install.sh | sh
 ```
 
-GitHub Releases からお使いの OS 向けバイナリを取得し、`~/.local/bin`（`$MADORE_BIN_DIR` で変更可）に配置する。`~/.local/bin` が PATH に無ければ追加すること。
+GitHub Releases から OS に合ったバイナリを取得し `~/.local/bin`（`$MADORE_BIN_DIR` で変更可）へ配置します。
 
-### 2. プリビルドバイナリを手動で
+</details>
 
-[Releases](https://github.com/ibuibu/madore/releases) から各 OS 向けのアーカイブをダウンロードし、`madore`（Windows は `madore.exe`）を PATH の通った場所に置く。
+<details>
+<summary><b>プリビルドバイナリを手動でダウンロード</b></summary>
+
+[Releases](https://github.com/ibuibu/madore/releases) からアーカイブを取得し、`madore`（Windows は `madore.exe`）を PATH の通った場所へ。
 
 | OS | アーカイブ |
 |----|-----------|
@@ -41,48 +50,53 @@ GitHub Releases からお使いの OS 向けバイナリを取得し、`~/.local
 | macOS (Apple Silicon) | `madore-aarch64-apple-darwin.tar.gz` |
 | Windows (x86_64) | `madore-x86_64-pc-windows-msvc.zip` |
 
-### 3. Cargo（Rust ツールチェーンがある場合）
+</details>
+
+<details>
+<summary><b>Cargo（Rust ツールチェーンがある場合）</b></summary>
 
 ```sh
 cargo install --git https://github.com/ibuibu/madore
 ```
 
-## 使い方
+</details>
+
+## 🚀 使い方
 
 ```sh
-madore                 # カレントディレクトリをルートに起動（ブラウザが開く）
-madore ./docs          # ディレクトリを指定
+madore                   # カレントディレクトリをルートに起動（ブラウザが開く）
+madore ./docs            # ディレクトリを指定
 madore --no-open ./docs  # ブラウザを自動で開かない
-madore --stop ./docs     # そのルートで動いているサーバーを停止
+madore --stop ./docs     # そのルートのサーバーを停止
 ```
 
-`madore` を実行するとサーバーを端末から切り離してバックグラウンド起動し、空きポート `http://127.0.0.1:<port>` で配信したままコマンドは終了する。同じルートを再度開くと既存サーバーを再利用する（ポートは `~/.local/state/madore/` に記録）。
+実行するとサーバーを端末から切り離してバックグラウンド起動し、`http://127.0.0.1:<port>` で配信したままコマンドは終了します。同じルートを再度開くと既存サーバーを再利用します（ポートは `~/.local/state/madore/` に記録）。
 
-## 仕組み
+## 🛠 仕組み
 
 | 領域 | 役割 |
 |------|------|
 | サーバー (comrak) | Markdown → GFM 構造の HTML 化 |
 | クライアント (vanilla JS) | highlight.js / KaTeX / Mermaid の見た目付与 |
 
-Markdown の構造化はサーバー側の comrak が行い、コードの色付け・数式・図の描画はクライアント側の JS が後処理する。npm / TypeScript のビルドは使わず、ベンダリングした静的アセットをバイナリに埋め込んでいる。
+構造化はサーバー側の comrak が担い、色付け・数式・図はクライアント側の JS が後処理します。npm / TypeScript のビルドは使わず、ベンダリングした静的アセットをバイナリに埋め込んでいます。
 
-## ソースからビルド
+## 🔧 ソースからビルド
 
 ```sh
 cargo build --release   # 生成物: target/release/madore
 cargo test              # テスト
 ```
 
-## リリース
+## 📦 リリース
 
-`vX.Y.Z` 形式のタグを push すると、GitHub Actions が各 OS 向けバイナリをビルドして Releases に添付する。
+`vX.Y.Z` 形式のタグを push すると、GitHub Actions が各 OS 向けバイナリをビルドして Releases に添付します。
 
 ```sh
-git tag v0.1.0
+git tag -a v0.1.0 -m v0.1.0
 git push origin v0.1.0
 ```
 
-## ライセンス
+## 📄 ライセンス
 
-MIT
+[MIT](LICENSE)
