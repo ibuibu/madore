@@ -45,7 +45,7 @@ GitHub Releases から OS に合ったバイナリを取得し `~/.local/bin`（
 
 | OS | アーカイブ |
 |----|-----------|
-| Linux (x86_64) | `madore-x86_64-unknown-linux-gnu.tar.gz` |
+| Linux (x86_64, static musl) | `madore-x86_64-unknown-linux-musl.tar.gz` |
 | macOS (Intel) | `madore-x86_64-apple-darwin.tar.gz` |
 | macOS (Apple Silicon) | `madore-aarch64-apple-darwin.tar.gz` |
 | Windows (x86_64) | `madore-x86_64-pc-windows-msvc.zip` |

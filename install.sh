@@ -14,7 +14,7 @@ arch="$(uname -m)"
 case "$os" in
   Linux)
     case "$arch" in
-      x86_64 | amd64) target="x86_64-unknown-linux-gnu" ;;
+      x86_64 | amd64) target="x86_64-unknown-linux-musl" ;;
       *) echo "未対応のアーキテクチャ: $arch (Releases から手動で取得してください)" >&2; exit 1 ;;
     esac
     ;;

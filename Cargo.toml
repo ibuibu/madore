@@ -1,6 +1,6 @@
 [package]
 name = "madore"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Markdown viewer served in your browser with a sidebar file tree and live reload"
 repository = "https://github.com/ibuibu/madore"
@@ -13,7 +13,8 @@ categories = ["command-line-utilities"]
 anyhow = "1.0.103"
 axum = "0.8.9"
 clap = { version = "4.6.1", features = ["derive"] }
-comrak = "0.53.0"
+# syntect/onig(C依存)を含むデフォルト機能を無効化。ハイライトはクライアント側で行う。
+comrak = { version = "0.53.0", default-features = false }
 mime_guess = "2.0.5"
 notify-debouncer-full = "0.7.0"
 rust-embed = "8.11.0"
