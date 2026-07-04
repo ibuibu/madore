@@ -2,49 +2,49 @@
 
 # madore
 
-**ブラウザで Markdown を軽快に読むためのローカルビューア**
+**A local Markdown viewer that opens in your browser**
 
-引数なしでもカレントディレクトリをルートにして、サイドバーに最初からファイルツリーを表示。<br>
-保存すれば自動でリロード。Rust 製の単一バイナリ。
+Serves a directory over `localhost` and shows a file tree in the sidebar from the start —
+even with no arguments (it uses the current directory). Saves reload automatically. A single Rust binary.
 
 [![Release](https://img.shields.io/github/v/release/ibuibu/madore?style=flat-square)](https://github.com/ibuibu/madore/releases)
 [![License](https://img.shields.io/github/license/ibuibu/madore?style=flat-square)](LICENSE)
 ![Rust](https://img.shields.io/badge/Rust-000000?style=flat-square&logo=rust&logoColor=white)
 
-<img src="docs/screenshot.png" width="820" alt="madore のスクリーンショット" />
+<img src="docs/screenshot.png" width="820" alt="madore screenshot" />
 
 </div>
 
-## ✨ 特徴
+## ✨ Features
 
-- 📂 **ファイルツリー** — サイドバーに常時表示、クリックで本文へ
-- 🔄 **ライブリロード** — 保存を検知して自動で表示更新（SSE）
-- 📝 **GitHub Flavored Markdown** — 表 / タスクリスト / 脚注 / GitHub Alerts
-- 🎨 **リッチ描画** — シンタックスハイライト・KaTeX 数式・Mermaid 図
-- 📦 **単一バイナリ** — 静的アセットを埋め込み、依存なしで配布可能
-- 🌗 **ダーク / ライト** — ブラウザ設定に自動追従
-- 🚀 **即終了** — サーバーはバックグラウンド常駐、コマンドはすぐ戻る（2回目以降は再利用）
+- 📂 **File tree** — always shown in the sidebar; click to open
+- 🔄 **Live reload** — detects saves and refreshes automatically (SSE)
+- 📝 **GitHub Flavored Markdown** — tables, task lists, footnotes, GitHub Alerts
+- 🎨 **Rich rendering** — syntax highlighting, KaTeX math, Mermaid diagrams
+- 📦 **Single binary** — static assets are embedded; ships with no dependencies
+- 🌗 **Dark / light** — follows your browser preference
+- 🚀 **Returns instantly** — the server runs in the background; the command exits right away (reused on later runs)
 
-## 📦 インストール
+## 📦 Installation
 
 <details open>
-<summary><b>インストールスクリプト（Linux / macOS・Rust 不要）</b></summary>
+<summary><b>Install script (Linux / macOS, no Rust needed)</b></summary>
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ibuibu/madore/main/install.sh | sh
 ```
 
-GitHub Releases から OS に合ったバイナリを取得し `~/.local/bin`（`$MADORE_BIN_DIR` で変更可）へ配置します。
+Downloads the binary for your OS from GitHub Releases and places it in `~/.local/bin` (override with `$MADORE_BIN_DIR`). The Linux build is a fully static musl binary, so it runs on any distro.
 
 </details>
 
 <details>
-<summary><b>プリビルドバイナリを手動でダウンロード</b></summary>
+<summary><b>Download a prebuilt binary manually</b></summary>
 
-[Releases](https://github.com/ibuibu/madore/releases) からアーカイブを取得し、`madore`（Windows は `madore.exe`）を PATH の通った場所へ。
+Grab an archive from [Releases](https://github.com/ibuibu/madore/releases) and put `madore` (`madore.exe` on Windows) somewhere on your `PATH`.
 
-| OS | アーカイブ |
-|----|-----------|
+| OS | Archive |
+|----|---------|
 | Linux (x86_64, static musl) | `madore-x86_64-unknown-linux-musl.tar.gz` |
 | macOS (Intel) | `madore-x86_64-apple-darwin.tar.gz` |
 | macOS (Apple Silicon) | `madore-aarch64-apple-darwin.tar.gz` |
@@ -53,7 +53,7 @@ GitHub Releases から OS に合ったバイナリを取得し `~/.local/bin`（
 </details>
 
 <details>
-<summary><b>Cargo（Rust ツールチェーンがある場合）</b></summary>
+<summary><b>Cargo (with a Rust toolchain)</b></summary>
 
 ```sh
 cargo install --git https://github.com/ibuibu/madore
@@ -61,42 +61,42 @@ cargo install --git https://github.com/ibuibu/madore
 
 </details>
 
-## 🚀 使い方
+## 🚀 Usage
 
 ```sh
-madore                   # カレントディレクトリをルートに起動（ブラウザが開く）
-madore ./docs            # ディレクトリを指定
-madore --no-open ./docs  # ブラウザを自動で開かない
-madore --stop ./docs     # そのルートのサーバーを停止
+madore                   # open the current directory (browser opens)
+madore ./docs            # open a specific directory
+madore --no-open ./docs  # don't open the browser automatically
+madore --stop ./docs     # stop the server for that root
 ```
 
-実行するとサーバーを端末から切り離してバックグラウンド起動し、`http://127.0.0.1:<port>` で配信したままコマンドは終了します。同じルートを再度開くと既存サーバーを再利用します（ポートは `~/.local/state/madore/` に記録）。
+Running `madore` detaches the server into the background and keeps serving at `http://127.0.0.1:<port>` while the command returns immediately. Opening the same root again reuses the running server (the port is recorded under `~/.local/state/madore/`).
 
-## 🛠 仕組み
+## 🛠 How it works
 
-| 領域 | 役割 |
-|------|------|
-| サーバー (comrak) | Markdown → GFM 構造の HTML 化 |
-| クライアント (vanilla JS) | highlight.js / KaTeX / Mermaid の見た目付与 |
+| Layer | Responsibility |
+|-------|----------------|
+| Server (comrak) | Markdown → GFM-structured HTML |
+| Client (vanilla JS) | highlight.js / KaTeX / Mermaid rendering |
 
-構造化はサーバー側の comrak が担い、色付け・数式・図はクライアント側の JS が後処理します。npm / TypeScript のビルドは使わず、ベンダリングした静的アセットをバイナリに埋め込んでいます。
+The server structures the Markdown with comrak; the client handles code coloring, math, and diagrams. There is no npm / TypeScript build — vendored static assets are embedded into the binary.
 
-## 🔧 ソースからビルド
+## 🔧 Build from source
 
 ```sh
-cargo build --release   # 生成物: target/release/madore
-cargo test              # テスト
+cargo build --release   # output: target/release/madore
+cargo test              # run tests
 ```
 
-## 📦 リリース
+## 📦 Releasing
 
-`vX.Y.Z` 形式のタグを push すると、GitHub Actions が各 OS 向けバイナリをビルドして Releases に添付します。
+Pushing a `vX.Y.Z` tag triggers GitHub Actions to build per-OS binaries and attach them to the release.
 
 ```sh
 git tag -a v0.1.0 -m v0.1.0
 git push origin v0.1.0
 ```
 
-## 📄 ライセンス
+## 📄 License
 
 [MIT](LICENSE)
