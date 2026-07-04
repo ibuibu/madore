@@ -76,3 +76,39 @@ fn find_h1(lines: &[&str]) -> Option<String> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn atx_heading() {
+        assert_eq!(extract_title("# Title\nbody").as_deref(), Some("Title"));
+    }
+
+    #[test]
+    fn setext_heading() {
+        assert_eq!(
+            extract_title("Setext\n======\nbody").as_deref(),
+            Some("Setext")
+        );
+    }
+
+    #[test]
+    fn skips_closed_front_matter() {
+        let md = "---\ntitle: meta\n---\n# Real\nbody";
+        assert_eq!(extract_title(md).as_deref(), Some("Real"));
+    }
+
+    #[test]
+    fn falls_back_when_front_matter_unclosed() {
+        // 閉じ `---` が無い場合でも、本文の見出しを拾えること。
+        let md = "---\ntitle: meta\n\n# Real\nbody";
+        assert_eq!(extract_title(md).as_deref(), Some("Real"));
+    }
+
+    #[test]
+    fn none_when_no_heading() {
+        assert_eq!(extract_title("just text\nmore text"), None);
+    }
+}

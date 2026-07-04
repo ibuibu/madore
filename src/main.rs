@@ -33,12 +33,12 @@ struct Cli {
     #[arg(long)]
     no_open: bool,
 
-    /// サーバーをフォアグラウンドで常駐実行する（通常はデーモンとして自動起動される）。
-    #[arg(long)]
+    /// サーバーをフォアグラウンドで常駐実行する（通常はデーモンとして自動起動される内部用）。
+    #[arg(long, hide = true)]
     foreground: bool,
 
-    /// バインドするポート（0 で自動割り当て）。
-    #[arg(long, default_value_t = 0)]
+    /// バインドするポート（0 で自動割り当て。内部用）。
+    #[arg(long, default_value_t = 0, hide = true)]
     port: u16,
 
     /// このルートで動いているサーバーを停止する。

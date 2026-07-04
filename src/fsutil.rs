@@ -17,3 +17,30 @@ pub fn is_excluded_name(name: &str) -> bool {
         || name.ends_with('~')
         || name.ends_with(".swp")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::Path;
+
+    #[test]
+    fn markdown_extensions() {
+        assert!(is_markdown(Path::new("a.md")));
+        assert!(is_markdown(Path::new("dir/b.markdown")));
+        assert!(!is_markdown(Path::new("a.txt")));
+        assert!(!is_markdown(Path::new("noext")));
+        assert!(!is_markdown(Path::new(".env")));
+    }
+
+    #[test]
+    fn excluded_names() {
+        assert!(is_excluded_name(".git"));
+        assert!(is_excluded_name(".hidden"));
+        assert!(is_excluded_name("node_modules"));
+        assert!(is_excluded_name("target"));
+        assert!(is_excluded_name("foo~"));
+        assert!(is_excluded_name("foo.swp"));
+        assert!(!is_excluded_name("src"));
+        assert!(!is_excluded_name("README.md"));
+    }
+}
