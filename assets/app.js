@@ -5,15 +5,29 @@
 
 const state = {
   currentPath: null,
+  // 現在表示中ファイルのレスポンス（html / raw の両方を保持し、モード切替で再取得しない）。
+  currentData: null,
   treeSignature: null,
+  // Raw（生 markdown テキスト）表示モードか。localStorage に永続化する。
+  rawMode: loadRawMode(),
 };
 
 const el = {
   tree: document.getElementById("tree"),
   rootName: document.getElementById("root-name"),
   doc: document.getElementById("doc"),
+  raw: document.getElementById("raw"),
+  toggle: document.getElementById("view-toggle"),
   empty: document.getElementById("empty"),
 };
+
+function loadRawMode() {
+  try {
+    return localStorage.getItem("madore:rawMode") === "1";
+  } catch (_) {
+    return false;
+  }
+}
 
 // ---- ツリー ----
 
@@ -120,30 +134,82 @@ async function openFile(path) {
   if (seq !== openSeq) return;
   if (!res.ok) {
     // 表示中ファイルが削除・リネームで開けなくなったら本文をクリアして未選択に戻す。
-    if (state.currentPath === path) {
-      state.currentPath = null;
-      el.doc.innerHTML = "";
-      el.doc.hidden = true;
-      el.empty.hidden = false;
-      document.title = "madore";
-      highlightActive();
-    }
+    if (state.currentPath === path) clearDoc();
     return;
   }
   const data = await res.json();
   if (seq !== openSeq) return;
   state.currentPath = data.path;
+  state.currentData = data;
   document.title = `${data.title} — madore`;
 
-  el.doc.innerHTML = data.html;
-  el.doc.hidden = false;
-  el.empty.hidden = true;
-
-  enhance(el.doc);
+  renderDoc();
   highlightActive();
   el.doc.scrollTop = 0;
   window.scrollTo(0, 0);
 }
+
+// 現在の表示モード（レンダリング / Raw）に従って本文を描画する。
+// 取得済みの currentData を使うので、モード切替でネットワークアクセスは発生しない。
+function renderDoc() {
+  const data = state.currentData;
+  if (!data) return;
+
+  if (state.rawMode) {
+    // 生 markdown をそのままテキストとして表示（textContent なので HTML は解釈されない）。
+    el.raw.textContent = data.raw;
+    el.raw.hidden = false;
+    el.doc.hidden = true;
+    el.doc.innerHTML = "";
+  } else {
+    el.doc.innerHTML = data.html;
+    el.doc.hidden = false;
+    el.raw.hidden = true;
+    el.raw.textContent = "";
+    enhance(el.doc);
+  }
+  el.empty.hidden = true;
+  el.toggle.hidden = false;
+}
+
+// 表示中ファイルを消して未選択状態に戻す。
+function clearDoc() {
+  state.currentPath = null;
+  state.currentData = null;
+  el.doc.innerHTML = "";
+  el.doc.hidden = true;
+  el.raw.textContent = "";
+  el.raw.hidden = true;
+  el.empty.hidden = false;
+  el.toggle.hidden = true;
+  document.title = "madore";
+  highlightActive();
+}
+
+// ---- 表示モード切替 ----
+
+function applyRawMode() {
+  el.toggle.setAttribute("aria-pressed", state.rawMode ? "true" : "false");
+  // ボタンは「押すと切り替わる先」を表示する。
+  el.toggle.textContent = state.rawMode ? "Rendered" : "Raw";
+  el.toggle.title = state.rawMode
+    ? "レンダリング表示に切り替え"
+    : "Raw（生テキスト）表示に切り替え";
+}
+
+function setRawMode(on) {
+  state.rawMode = on;
+  try {
+    localStorage.setItem("madore:rawMode", on ? "1" : "0");
+  } catch (_) {
+    /* localStorage 不可でもモード自体は動く */
+  }
+  applyRawMode();
+  renderDoc();
+}
+
+el.toggle.addEventListener("click", () => setRawMode(!state.rawMode));
+applyRawMode();
 
 // レンダリング済み HTML に見た目を付与する後処理。
 function enhance(root) {

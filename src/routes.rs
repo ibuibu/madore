@@ -69,6 +69,8 @@ pub async fn tree(State(state): State<AppState>) -> Json<TreeResponse> {
 #[derive(Serialize)]
 pub struct ContentResponse {
     html: String,
+    /// レンダリング前の生 markdown ソース。フロントの Raw 表示モードで使う。
+    raw: String,
     title: String,
     path: String,
 }
@@ -112,10 +114,11 @@ pub async fn content(
     let md = String::from_utf8_lossy(&bytes).into_owned();
 
     // comrak は同期 CPU 処理なので、非同期ワーカーをブロックしないよう spawn_blocking に載せる。
-    let (html, title_opt) = tokio::task::spawn_blocking(move || {
+    // md は Raw 表示用に生ソースとして呼び出し元へ返す。
+    let (html, title_opt, raw) = tokio::task::spawn_blocking(move || {
         let title = extract_title(&md);
         let html = render_markdown(&md);
-        (html, title)
+        (html, title, md)
     })
     .await
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -124,6 +127,7 @@ pub async fn content(
 
     Ok(Json(ContentResponse {
         html,
+        raw,
         title,
         path: rel.clone(),
     }))

@@ -62,6 +62,10 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* ナビゲーションなので選択対象から外す。
+     これで Ctrl+A（全選択）が本文だけを選び、サイドバーを巻き込まない。 */
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 #sidebar-header {
@@ -145,6 +149,51 @@ body {
 #content {
   flex: 1;
   overflow-y: auto;
+  position: relative;
+}
+
+/* レンダリング / Raw 表示を切り替えるトグル。本文の右上に固定表示する。 */
+#view-toggle {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 10;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--fg);
+  background: var(--sidebar-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  /* 全選択・コピーにボタン文字("Raw"/"Rendered")が混ざらないようにする。 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#view-toggle:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+}
+
+#view-toggle[aria-pressed="true"] {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Raw 表示: 生 markdown を等幅・折り返しありでそのまま出す。 */
+.raw-body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 48px 120px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .empty {
@@ -345,5 +394,9 @@ body {
   .markdown-body {
     padding: 24px 18px 80px;
     font-size: 15px;
+  }
+  .raw-body {
+    padding: 24px 18px 80px;
+    font-size: 13px;
   }
 }

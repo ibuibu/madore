@@ -35,7 +35,16 @@
         <nav id="tree" aria-label="ファイルツリー"></nav>
       </aside>
       <main id="content">
+        <button
+          id="view-toggle"
+          type="button"
+          aria-pressed="false"
+          hidden
+        >
+          Raw
+        </button>
         <article id="doc" class="markdown-body" hidden></article>
+        <pre id="raw" class="raw-body" hidden></pre>
         <div id="empty" class="empty">
           <p>← サイドバーからファイルを選択</p>
         </div>
