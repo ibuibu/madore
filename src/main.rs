@@ -95,18 +95,17 @@ fn run_server(root: PathBuf, port: u16) -> Result<()> {
 
         let (tx, _rx) = broadcast::channel::<String>(64);
 
-        // ファイル監視。返り値を保持して監視スレッドを生かし続ける。
-        let _debouncer = watcher::spawn(&root, tx.clone())
-            .with_context(|| format!("ファイル監視を開始できません: {}", root.display()))?;
-
         let shutdown = Arc::new(Notify::new());
         let state = AppState {
             root: root.clone(),
             root_name,
-            tx,
+            tx: tx.clone(),
             shutdown: shutdown.clone(),
         };
 
+        // 先にポートを bind して即座に応答できるようにする。
+        // ファイル監視のセットアップ（巨大リポジトリでは inotify 登録に数十秒かかりうる）を
+        // 待ってから bind すると、ランチャーの起動確認がタイムアウトしてしまう。
         let listener = TcpListener::bind(("127.0.0.1", port))
             .await
             .context("ポートをバインドできません")?;
@@ -115,10 +114,22 @@ fn run_server(root: PathBuf, port: u16) -> Result<()> {
         // このメッセージは端末ではなくログファイルに出る（デタッチ時に stdout を回すため）。
         println!("madore: {} を http://{} で配信中", root.display(), addr);
 
+        // ファイル監視はサーバー起動をブロックしないよう別スレッドで設定する。
+        // 返ってきた Debouncer は保持し続け、シャットダウンまで監視を生かす。
+        let watch_root = root.clone();
+        let watcher_task = tokio::task::spawn_blocking(move || watcher::spawn(&watch_root, tx));
+
         axum::serve(listener, server::app(state))
             .with_graceful_shutdown(async move { shutdown.notified().await })
             .await
             .context("サーバーが停止しました")?;
+
+        // シャットダウン後に監視を片付ける。設定に失敗していたらログに残す。
+        match watcher_task.await {
+            Ok(Ok(debouncer)) => drop(debouncer),
+            Ok(Err(e)) => eprintln!("madore: ファイル監視を開始できません: {e}"),
+            Err(e) => eprintln!("madore: ファイル監視スレッドが異常終了しました: {e}"),
+        }
 
         Ok::<(), anyhow::Error>(())
     })
