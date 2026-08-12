@@ -56,13 +56,27 @@ async function loadTree() {
   el.tree.appendChild(renderNodes(data.nodes, closedDirs));
   el.tree.scrollTop = scrollTop;
 
-  // 初回で未選択なら先頭ファイルを自動で開く（"not selected" を出さない）。
+  // 初回で未選択なら URL 指定のファイル、無ければ先頭ファイルを自動で開く
+  // （"not selected" を出さない）。
   if (!state.currentPath) {
-    const first = firstFile(data.nodes);
-    if (first) openFile(first);
+    const wanted = pathFromUrl();
+    const target =
+      wanted && hasFile(data.nodes, wanted) ? wanted : firstFile(data.nodes);
+    if (target) openFile(target);
   } else {
     highlightActive();
   }
+}
+
+function hasFile(nodes, path) {
+  for (const node of nodes) {
+    if (node.is_dir) {
+      if (hasFile(node.children, path)) return true;
+    } else if (node.path === path) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function firstFile(nodes) {
@@ -126,6 +140,22 @@ function highlightActive() {
 
 // ---- 本文 ----
 
+// 表示中ファイルは URL の ?path= に持たせる。リロードしても同じファイルが開く。
+function pathFromUrl() {
+  return new URLSearchParams(location.search).get("path");
+}
+
+function syncUrl(path) {
+  const url = new URL(location.href);
+  if (path) {
+    url.searchParams.set("path", path);
+  } else {
+    url.searchParams.delete("path");
+  }
+  // pushState だとライブリロードの再取得のたびに履歴が積み上がるので replaceState。
+  history.replaceState(null, "", url);
+}
+
 let openSeq = 0;
 async function openFile(path) {
   // 連打・競合対策: 最新のリクエストの結果だけを反映する。
@@ -142,6 +172,7 @@ async function openFile(path) {
   state.currentPath = data.path;
   state.currentData = data;
   document.title = `${data.title} — madore`;
+  syncUrl(data.path);
 
   renderDoc();
   highlightActive();
@@ -183,6 +214,7 @@ function clearDoc() {
   el.empty.hidden = false;
   el.toggle.hidden = true;
   document.title = "madore";
+  syncUrl(null);
   highlightActive();
 }
 
