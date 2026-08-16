@@ -10,7 +10,7 @@ use axum::response::{Html, IntoResponse, Response};
 use serde::Serialize;
 use tokio_stream::Stream;
 use tokio_stream::StreamExt;
-use tokio_stream::wrappers::BroadcastStream;
+use tokio_stream::wrappers::{BroadcastStream, WatchStream};
 
 use crate::assets;
 use crate::fsutil::is_markdown;
@@ -48,7 +48,7 @@ pub async fn health(State(state): State<AppState>) -> Response {
 
 /// サーバーを graceful shutdown させる（`madore --stop` から呼ばれる）。
 pub async fn shutdown(State(state): State<AppState>) -> Response {
-    state.shutdown.notify_one();
+    let _ = state.shutdown.send(true);
     (StatusCode::OK, "shutting down").into_response()
 }
 
@@ -140,16 +140,32 @@ fn file_stem(path: &Path) -> String {
         .to_string()
 }
 
+enum SseItem {
+    Reload(String),
+    Shutdown,
+}
+
 /// ライブリロード用 SSE。変更があったファイルの相対パスを `reload` イベントで push。
 pub async fn events(
     State(state): State<AppState>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let rx = state.tx.subscribe();
-    let stream = BroadcastStream::new(rx).map(|msg| {
+    let reloads = BroadcastStream::new(state.tx.subscribe()).map(|msg| {
         // Lagged（チャネル溢れで取りこぼし）時は "*" を送り、
         // クライアントに全体再読込＋表示中ファイル再取得を促す。
-        let data = msg.unwrap_or_else(|_| "*".to_string());
-        Ok(Event::default().event("reload").data(data))
+        SseItem::Reload(msg.unwrap_or_else(|_| "*".to_string()))
+    });
+
+    // WatchStream は購読時点の値も流すので、初期値の false は捨てる。
+    let shutdowns = WatchStream::new(state.shutdown.subscribe())
+        .filter(|requested| *requested)
+        .map(|_| SseItem::Shutdown);
+
+    // shutdown を受けたら自分からストリームを終わらせる。この SSE は放っておくと永久に
+    // 開いたままで、graceful shutdown が接続の終了を待ち続けるため `madore --stop` が
+    // 完了しなくなる。
+    let stream = reloads.merge(shutdowns).map_while(|item| match item {
+        SseItem::Reload(data) => Some(Ok(Event::default().event("reload").data(data))),
+        SseItem::Shutdown => None,
     });
 
     Sse::new(stream).keep_alive(KeepAlive::default())

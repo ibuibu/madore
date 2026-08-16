@@ -14,7 +14,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use clap::Parser;
 use tokio::net::TcpListener;
-use tokio::sync::{Notify, broadcast};
+use tokio::sync::{broadcast, watch};
 
 use crate::server::AppState;
 
@@ -71,15 +71,24 @@ fn main() -> Result<()> {
 
 /// このルートで動いているサーバーを停止する。
 fn stop(root: PathBuf) -> Result<()> {
-    if let Some(port) = daemon::recorded_port(&root)
-        && daemon::probe(port, &root)
-    {
-        daemon::send_shutdown(port);
-        daemon::clear_record(&root);
-        println!("madore: 停止しました: {}", root.display());
-    } else {
+    let Some(port) = daemon::recorded_port(&root).filter(|port| daemon::probe(*port, &root)) else {
         println!("madore: 起動していません: {}", root.display());
+        return Ok(());
+    };
+
+    daemon::send_shutdown(port);
+
+    // 実際に応答しなくなるのを確認してから成功を報告する。記録の削除も停止確認後に行う
+    // （生きているサーバーの記録を消すと、次の起動で二重にサーバーが立つ）。
+    if !daemon::wait_until_gone(port, &root, Duration::from_secs(10)) {
+        anyhow::bail!(
+            "サーバーが停止しませんでした（ポート {port}）: {}",
+            root.display()
+        );
     }
+
+    daemon::clear_record(&root);
+    println!("madore: 停止しました: {}", root.display());
     Ok(())
 }
 
@@ -95,12 +104,12 @@ fn run_server(root: PathBuf, port: u16) -> Result<()> {
 
         let (tx, _rx) = broadcast::channel::<String>(64);
 
-        let shutdown = Arc::new(Notify::new());
+        let (shutdown_tx, mut shutdown_rx) = watch::channel(false);
         let state = AppState {
             root: root.clone(),
             root_name,
             tx: tx.clone(),
-            shutdown: shutdown.clone(),
+            shutdown: Arc::new(shutdown_tx),
         };
 
         // 先にポートを bind して即座に応答できるようにする。
@@ -120,7 +129,9 @@ fn run_server(root: PathBuf, port: u16) -> Result<()> {
         let watcher_task = tokio::task::spawn_blocking(move || watcher::spawn(&watch_root, tx));
 
         axum::serve(listener, server::app(state))
-            .with_graceful_shutdown(async move { shutdown.notified().await })
+            .with_graceful_shutdown(async move {
+                let _ = shutdown_rx.changed().await;
+            })
             .await
             .context("サーバーが停止しました")?;
 

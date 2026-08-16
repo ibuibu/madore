@@ -7,7 +7,7 @@ use axum::http::{StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::Response;
 use axum::routing::{get, post};
-use tokio::sync::{Notify, broadcast};
+use tokio::sync::{broadcast, watch};
 
 use crate::routes;
 
@@ -21,7 +21,9 @@ pub struct AppState {
     /// ファイル変更通知の送信端。
     pub tx: broadcast::Sender<String>,
     /// /api/shutdown で graceful shutdown を発火させる合図。
-    pub shutdown: Arc<Notify>,
+    /// Notify ではなく watch なのは、サーバー本体と全 SSE ストリームが同じ合図を
+    /// 受け取れるようにするため（Notify の permit は 1 つの待ち手しか起こせない）。
+    pub shutdown: Arc<watch::Sender<bool>>,
 }
 
 /// ルーターを組み立てる。

@@ -102,6 +102,18 @@ pub fn clear_record(root: &Path) {
     let _ = fs::remove_file(record_file(root));
 }
 
+/// サーバーが応答しなくなるまで待つ。時間内に消えなければ false。
+pub fn wait_until_gone(port: u16, root: &Path, timeout: Duration) -> bool {
+    let start = Instant::now();
+    while start.elapsed() < timeout {
+        if !probe(port, root) {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    false
+}
+
 /// サーバーが起動して応答するまで待つ。
 pub fn wait_until_ready(port: u16, root: &Path, timeout: Duration) -> bool {
     let start = Instant::now();
