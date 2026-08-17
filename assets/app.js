@@ -8,6 +8,11 @@ const state = {
   // 現在表示中ファイルのレスポンス（html / raw の両方を保持し、モード切替で再取得しない）。
   currentData: null,
   treeSignature: null,
+  rootName: null,
+  // 開いているフォルダのパス集合。localStorage に永続化する。
+  // 「閉じている方」ではなく「開いている方」を持つので、保存が無い初回や
+  // 新しく増えたフォルダは閉じた状態になる。
+  openDirs: new Set(),
   // Raw（生 markdown テキスト）表示モードか。localStorage に永続化する。
   rawMode: loadRawMode(),
 };
@@ -29,6 +34,29 @@ function loadRawMode() {
   }
 }
 
+// 別ディレクトリを開いた madore とキーが混ざらないようにルート名で分ける
+// （ポートはルートごとに採番し直されるので origin だけでは分離できない）。
+function openDirsKey() {
+  return `madore:openDirs:${state.rootName}`;
+}
+
+function loadOpenDirs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(openDirsKey()));
+    return new Set(Array.isArray(saved) ? saved : []);
+  } catch (_) {
+    return new Set();
+  }
+}
+
+function saveOpenDirs() {
+  try {
+    localStorage.setItem(openDirsKey(), JSON.stringify([...state.openDirs]));
+  } catch (_) {
+    /* localStorage 不可でもセッション中の開閉は動く */
+  }
+}
+
 // ---- ツリー ----
 
 async function loadTree() {
@@ -43,17 +71,17 @@ async function loadTree() {
   if (signature === state.treeSignature) return;
   state.treeSignature = signature;
 
-  // 再構築で失われる「畳んでいたフォルダ」とスクロール位置を控えて復元する。
-  const closedDirs = new Set(
-    [...el.tree.querySelectorAll("details")]
-      .filter((d) => !d.open)
-      .map((d) => d.dataset.path),
-  );
+  if (state.rootName !== data.root_name) {
+    state.rootName = data.root_name;
+    state.openDirs = loadOpenDirs();
+  }
+
+  // 再構築で失われるスクロール位置を控えて復元する（開閉は openDirs 側で持つ）。
   const scrollTop = el.tree.scrollTop;
 
   el.rootName.textContent = data.root_name;
   el.tree.innerHTML = "";
-  el.tree.appendChild(renderNodes(data.nodes, closedDirs));
+  el.tree.appendChild(renderNodes(data.nodes));
   el.tree.scrollTop = scrollTop;
 
   // 初回で未選択なら URL 指定のファイル、無ければ先頭ファイルを自動で開く
@@ -93,21 +121,30 @@ function firstFile(nodes) {
   return null;
 }
 
-function renderNodes(nodes, closedDirs) {
-  const closed = closedDirs || new Set();
+function renderNodes(nodes) {
   const ul = document.createElement("ul");
   for (const node of nodes) {
     const li = document.createElement("li");
     if (node.is_dir) {
       const details = document.createElement("details");
-      // 以前畳まれていたフォルダは畳んだまま、それ以外（新規含む）は開く。
-      details.open = !closed.has(node.path);
+      details.open = state.openDirs.has(node.path);
       details.dataset.path = node.path;
+      details.addEventListener("toggle", () => {
+        // toggle は open 属性の変更で非同期に飛ぶため、こちらから開いた場合にも
+        // 発火する。状態が変わっていなければ保存しない。
+        if (details.open === state.openDirs.has(node.path)) return;
+        if (details.open) {
+          state.openDirs.add(node.path);
+        } else {
+          state.openDirs.delete(node.path);
+        }
+        saveOpenDirs();
+      });
       const summary = document.createElement("summary");
       summary.className = "dir";
       summary.textContent = node.name;
       details.appendChild(summary);
-      details.appendChild(renderNodes(node.children, closed));
+      details.appendChild(renderNodes(node.children));
       li.appendChild(details);
     } else {
       const a = document.createElement("a");
@@ -124,6 +161,24 @@ function renderNodes(nodes, closedDirs) {
     ul.appendChild(li);
   }
   return ul;
+}
+
+// 表示中ファイルがツリー上で見えるように、その親フォルダを開く。
+// 既定が全て閉じた状態なので、これが無いと選択中ファイルが埋もれて見えない。
+function revealDirs(path) {
+  const parts = path.split("/");
+  const dirs = [];
+  for (let i = 0; i < parts.length - 1; i++) {
+    dirs.push(parts.slice(0, i + 1).join("/"));
+  }
+  const added = dirs.filter((dir) => !state.openDirs.has(dir));
+  if (added.length === 0) return;
+
+  for (const dir of added) state.openDirs.add(dir);
+  saveOpenDirs();
+  for (const details of el.tree.querySelectorAll("details")) {
+    if (added.includes(details.dataset.path)) details.open = true;
+  }
 }
 
 function highlightActive() {
@@ -175,6 +230,7 @@ async function openFile(path) {
   syncUrl(data.path);
 
   renderDoc();
+  revealDirs(data.path);
   highlightActive();
   el.doc.scrollTop = 0;
   window.scrollTo(0, 0);
